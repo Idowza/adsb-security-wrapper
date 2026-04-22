@@ -3,12 +3,12 @@
 % Author: Steven Iden
 % Project: Securing ADS-B Against Spoofing Attacks
 % 
-% Phase 3: The Security Wrapper Algorithm
+% Phase 3: The Security Wrapper Algorithm (Updated)
 % Description: This script generates a mixed, noisy RF environment containing
 % both legitimate traffic (Alice) and spoofed traffic (Eve). It then passes 
 % all traffic through the Security Wrapper algorithm. The wrapper compares 
-% the theoretical change in RSS (based on claimed distance) against the 
-% actual change in RSS. Packets violating physics are dropped.
+% the theoretical absolute RSS (based on claimed distance) against the 
+% actual physical RSS received. Packets violating physics are dropped.
 % =========================================================================
 
 clear; clc; close all;
@@ -50,8 +50,6 @@ raw_buffer = sortrows(raw_buffer, 1);
 disp('Mixed traffic buffered. Sending to Security Wrapper...');
 
 %% 2. The Security Wrapper Algorithm
-% Initialize tracker for previous states: dictionary of [prev_dist, prev_rss]
-state_tracker = containers.Map('KeyType', 'double', 'ValueType', 'any');
 rss_error_threshold = 2.0; % Threshold in dBm to tolerate natural noise
 
 % Output arrays
@@ -65,36 +63,21 @@ for i = 1:size(raw_buffer,1)
     pkt_dist = raw_buffer(i,5); pkt_rss = raw_buffer(i,6);
     is_real = raw_buffer(i,7);
     
-    if ~isKey(state_tracker, pkt_id)
-        % First time seeing this aircraft. Accept it to establish a baseline.
-        state_tracker(pkt_id) = [pkt_dist, pkt_rss];
-        accepted_packets = [accepted_packets; raw_buffer(i,:)];
-        if is_real == 1; tn = tn + 1; else; fn = fn + 1; end
-        continue;
-    end
+    % --- THE CORE ALGORITHM (Fixed: Absolute RSS Verification) ---
+    % 1. Calculate theoretical expected RSS based on claimed distance
+    % Using Free Space Path Loss (FSPL) and standard Tx Power (50 dBm)
+    expected_rss = tx_power_dBm - (20*log10(pkt_dist) + 20*log10(freq_MHz) + 32.44);
     
-    % Get previous data for this aircraft
-    prev_state = state_tracker(pkt_id);
-    prev_dist = prev_state(1); prev_rss = prev_state(2);
+    % 2. Calculate the physics error (Deviation from path loss model)
+    physics_error = abs(pkt_rss - expected_rss);
     
-    % --- THE CORE ALGORITHM ---
-    % 1. Calculate the theoretical expected change in RSS based on claimed movement
-    expected_delta_rss = 20*log10(prev_dist) - 20*log10(pkt_dist);
-    
-    % 2. Calculate the actual physical change in RSS
-    actual_delta_rss = pkt_rss - prev_rss;
-    
-    % 3. Calculate physics error
-    physics_error = abs(actual_delta_rss - expected_delta_rss);
-    
-    % 4. Decision Gate
+    % 3. Decision Gate
     if physics_error > rss_error_threshold
         % SPOOF DETECTED! Drop the packet.
         dropped_packets = [dropped_packets; raw_buffer(i,:)];
         if is_real == 0; tp = tp + 1; else; fp = fp + 1; end
     else
-        % VALIDATED! Accept the packet and update tracker.
-        state_tracker(pkt_id) = [pkt_dist, pkt_rss];
+        % VALIDATED! Accept the packet.
         accepted_packets = [accepted_packets; raw_buffer(i,:)];
         if is_real == 1; tn = tn + 1; else; fn = fn + 1; end
     end
@@ -118,12 +101,14 @@ fprintf('====================================\n');
 figure('Name', 'Filtered ATC Airspace', 'NumberTitle', 'off');
 % Plot Alice (Accepted)
 alice_accepted = accepted_packets(accepted_packets(:,2) == 1, :);
-plot(alice_accepted(:,4), alice_accepted(:,3), 'b-', 'LineWidth', 2); hold on;
+if ~isempty(alice_accepted)
+    plot(alice_accepted(:,4), alice_accepted(:,3), 'b-', 'LineWidth', 2); hold on;
+end
 
 % Plot Eve (If any leaked through)
 eve_accepted = accepted_packets(accepted_packets(:,2) == 2, :);
 if ~isempty(eve_accepted)
-    plot(eve_accepted(:,4), eve_accepted(:,3), 'r--', 'LineWidth', 2);
+    plot(eve_accepted(:,4), eve_accepted(:,3), 'r--', 'LineWidth', 2); hold on;
 end
 
 % Plot Ground Station
@@ -131,9 +116,11 @@ plot(gs_lon, gs_lat, 'k^', 'MarkerSize', 10, 'MarkerFaceColor', 'k');
 grid on;
 title('ATC Display AFTER Security Wrapper');
 xlabel('Longitude'); ylabel('Latitude');
+
+% Conditional Legend & Text based on success
 if isempty(eve_accepted)
     legend('Alice (Verified Path)', 'ATC Tower', 'Location', 'best');
-    text(-97.2, 47.88, 'Ghost Aircraft Eliminated!', 'Color', 'red', 'FontSize', 12, 'FontWeight', 'bold');
+    text(-97.3, 47.88, 'Ghost Aircraft Eliminated!', 'Color', 'red', 'FontSize', 12, 'FontWeight', 'bold');
 else
     legend('Alice (Verified Path)', 'Eve (Leaked Spoof)', 'ATC Tower', 'Location', 'best');
 end
