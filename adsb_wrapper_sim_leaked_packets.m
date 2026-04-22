@@ -35,10 +35,7 @@ for t = time_vector
     % --- EVE (Attacker/Ghost) ---
     e_lat = 47.9253 + (0.0000 * t); e_lon = -97.4000 + (0.0030 * t);
     e_claimed_dist = sqrt(((e_lat - gs_lat)*111)^2 + ((e_lon - gs_lon)*85)^2 + (15000*0.0003048)^2);
-    
-    % FIX: Moved Eve's van to ~1.5km from the tower. 
-    % Prevents the "Radius Intersection Anomaly" where the fake plane crosses the van's actual distance.
-    e_true_dist = sqrt(((47.9200 - gs_lat)*111)^2 + ((-97.0500 - gs_lon)*85)^2); % Stationary Van
+    e_true_dist = sqrt(((47.9000 - gs_lat)*111)^2 + ((-97.1000 - gs_lon)*85)^2); % Stationary Van
     e_rss = tx_power_dBm - (20*log10(e_true_dist) + 20*log10(freq_MHz) + 32.44) + (randn*noise_variance);
     
     % Package Eve (ID 2, True=0)
