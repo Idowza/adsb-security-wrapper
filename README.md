@@ -19,8 +19,8 @@ The simulation models an RF communication link with three distinct nodes:
 ```text
 ├── simulations/
 │   ├── adsb_baseline_sim.m   # Phase 1: Legitimate flight path and RSS generation
-│   ├── adsb_attack_sim.m     # Phase 2: Spoofer injection (Pending)
-│   └── adsb_wrapper_sim.m    # Phase 3: Defense algorithm (Pending)
+│   ├── adsb_attack_sim.m     # Phase 2: Spoofer injection
+│   └── adsb_wrapper_sim.m    # Phase 3: Defense algorithm
 ├── reports/
 │   ├── proposal/             # LaTeX source for the 1-pager and Quad Chart
 │   ├── progress_report/      # LaTeX source for the April 3 report
@@ -30,9 +30,9 @@ The simulation models an RF communication link with three distinct nodes:
 
 ## Project Roadmap
 - [x] Phase 1: Baseline Simulation. Generate valid ADS-B flight paths, calculating Free Space Path Loss (FSPL) and Expected Received Signal Strength (RSS).
-- [ ] Phase 2: Attack Simulation. Introduce an adversary node injecting packets with mismatched physical characteristics.
-- [ ] Phase 3: Defense Implementation. Build the wrapper logic to evaluate RSS discrepancies and discard invalid packets.
-- [ ] Phase 4: Evaluation. Calculate False Positive Rate (FPR) and Detection Rate (DR).
+- [x] Phase 2: Attack Simulation. Introduce an adversary node injecting packets with mismatched physical characteristics.
+- [x] Phase 3: Defense Implementation. Build the wrapper logic to evaluate RSS discrepancies and discard invalid packets.
+- [x] Phase 4: Evaluation. Calculate False Positive Rate (FPR) and Detection Rate (DR).
 
 ## How to Run
 1. Clone this repository to your local machine.
