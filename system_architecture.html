@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Architecture</title>
+    <!-- Import Mermaid.js for diagram generation -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#ffffff',
+                primaryBorderColor: '#333333',
+                primaryTextColor: '#000000',
+                lineColor: '#333333',
+                fontFamily: 'arial'
+            }
+        });
+    </script>
+    <style>
+        body { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+            background-color: #f4f4f5; 
+            font-family: Arial, sans-serif; 
+        }
+        .diagram-container { 
+            padding: 40px 60px; 
+            border: 1px solid #d4d4d8; 
+            border-radius: 12px; 
+            background-color: #ffffff; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        h2 { 
+            text-align: center; 
+            color: #18181b; 
+            margin-bottom: 30px;
+            font-size: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="diagram-container">
+        <h2>ADS-B Security Wrapper Architecture</h2>
+        <div class="mermaid">
+            graph TD
+                %% Define CSS classes for nodes
+                classDef default fill:#ffffff,stroke:#333,stroke-width:2px,color:#000;
+                classDef attacker fill:#fef2f2,stroke:#dc2626,stroke-width:2px,color:#991b1b;
+                classDef secure fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#166534;
+                classDef wrapper fill:#eff6ff,stroke:#2563eb,stroke-width:2px,color:#1e40af;
+
+                %% Nodes and Connections
+                A[Alice: Legitimate Aircraft<br/>True Distance: Dynamic] -->|Valid DF17 Packet| RF((1090 MHz<br/>RF Channel))
+                E[Eve: SDR Attacker<br/>True Distance: Constant]:::attacker -->|Spoofed DF17 Packet| RF
+
+                RF --> RX[Bob: Ground Station Antenna]
+                RX --> Demod[RF Demodulator]
+
+                Demod -->|Claimed Coordinates| SW
+                Demod -->|Hardware RSS Measurement| SW
+
+                SW{Security Wrapper<br/>Absolute RSS Verification}:::wrapper
+
+                SW -->|Physics Verified<br/>Error < 2.0 dBm| ATC[ATC Display<br/>Airspace Rendered]:::secure
+                SW -->|Physics Violation<br/>Error > 2.0 dBm| DROP[Packet Dropped<br/>Ghost Aircraft Filtered]:::attacker
+        </div>
+    </div>
+</body>
+</html>
